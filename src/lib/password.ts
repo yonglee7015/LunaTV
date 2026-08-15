@@ -21,9 +21,8 @@ export function hashPassword(password: string): string {
 
 /**
  * 验证密码是否匹配存储的哈希值
- * 支持两种格式:
- * - 加盐哈希: `salt:hash` (新格式)
- * - 明文密码: 不含 `:` 或长度不符合哈希格式 (旧格式，兼容迁移期)
+ * 支持加盐哈希格式: `salt:hash` (新格式)
+ * 旧格式明文密码已不推荐，应立即迁移
  */
 export function verifyPassword(
   password: string,
@@ -46,8 +45,28 @@ export function verifyPassword(
     return timingSafeEqual(hash, storedHashBuf);
   }
 
-  // 旧格式：明文密码直接比较（兼容未迁移的数据）
-  return storedValue === password;
+  // 旧格式：明文密码 - 使用 timingSafeEqual 防止时序攻击
+  // 建议：应在登录成功后立即触发密码哈希迁移
+  const providedBuf = Buffer.from(password);
+  const storedBuf = Buffer.from(storedValue);
+
+  // 检查长度是否匹配，防止长度泄露
+  if (providedBuf.length !== storedBuf.length) {
+    // 创建等长缓冲区进行假比较，防止时序泄露
+    const dummyBuf = Buffer.alloc(storedBuf.length);
+    try {
+      timingSafeEqual(providedBuf.length > 0 ? providedBuf : dummyBuf, dummyBuf);
+    } catch {
+      // 比较失败，返回 false
+    }
+    return false;
+  }
+
+  try {
+    return timingSafeEqual(providedBuf, storedBuf);
+  } catch {
+    return false;
+  }
 }
 
 /**

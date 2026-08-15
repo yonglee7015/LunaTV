@@ -56,12 +56,24 @@ export function getAuthInfoFromBrowserCookie(): {
       return null;
     }
 
-    // 处理可能的双重编码
-    let decoded = decodeURIComponent(authCookie);
+    // 单次解码，不支持双重编码
+    // 使用明确的编码版本标记来处理不同的编码方案
+    let decoded = authCookie;
 
-    // 如果解码后仍然包含 %，说明是双重编码，需要再次解码
-    if (decoded.includes('%')) {
-      decoded = decodeURIComponent(decoded);
+    // 检查是否以 'v1:' 开头（版本控制）
+    if (decoded.startsWith('v1:')) {
+      decoded = decodeURIComponent(decoded.substring(3));
+    } else if (decoded.startsWith('v0:')) {
+      // 旧版本支持（只解码一次）
+      decoded = decodeURIComponent(decoded.substring(3));
+    } else {
+      // 无版本标记，尝试解码一次
+      try {
+        decoded = decodeURIComponent(decoded);
+      } catch {
+        // 如果解码失败，使用原始值
+        decoded = authCookie;
+      }
     }
 
     const authData = JSON.parse(decoded);

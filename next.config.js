@@ -14,18 +14,23 @@ const nextConfig = {
     instrumentationHook: process.env.NODE_ENV === 'production',
   },
 
-  // Uncoment to add domain whitelist
+  // Whitelist trusted image domains only
   images: {
     unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'img.doubanio.com',
       },
       {
-        protocol: 'http',
-        hostname: '**',
+        protocol: 'https',
+        hostname: '**.doubanio.com',
       },
+      // Add more trusted domains as needed
+      // {
+      //   protocol: 'https',
+      //   hostname: 'trusted-cdn.example.com',
+      // },
     ],
   },
 

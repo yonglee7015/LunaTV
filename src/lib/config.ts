@@ -259,6 +259,52 @@ async function getInitConfig(configFile: string, subConfig: {
     });
   });
 
+  // 当无内置播放源时，提供默认源（方便开箱即用）
+  if (adminConfig.SourceConfig.length === 0) {
+    const defaultSources = [
+      {
+        key: 'hongniuzy',
+        name: '红牛资源',
+        api: 'https://www.hongniuzy2.com/api.php/provide/vod',
+        detail: '',
+      },
+      {
+        key: 'wujinzy',
+        name: '无尽资源',
+        api: 'https://api.wujinapi.me/api.php/provide/vod',
+        detail: '',
+      },
+      {
+        key: 'liangzi',
+        name: '量子资源',
+        api: 'https://cj.lziapi.com/api.php/provide/vod',
+        detail: '',
+      },
+      {
+        key: 'baofeng',
+        name: '暴风资源',
+        api: 'https://bfzyapi.com/api.php/provide/vod',
+        detail: '',
+      },
+      {
+        key: 'suying',
+        name: '速影资源',
+        api: 'https://suoyingzy.xyz/api.php/provide/vod',
+        detail: '',
+      },
+    ];
+    defaultSources.forEach((site) => {
+      adminConfig.SourceConfig.push({
+        key: site.key,
+        name: site.name,
+        api: site.api,
+        detail: site.detail,
+        from: 'config',
+        disabled: false,
+      });
+    });
+  }
+
   // 从配置文件中补充自定义分类信息
   cfgFile.custom_category?.forEach((category) => {
     adminConfig.CustomCategories.push({
@@ -269,6 +315,30 @@ async function getInitConfig(configFile: string, subConfig: {
       disabled: false,
     });
   });
+
+  // 当无自定义分类时，提供默认分类（方便开箱即用）
+  if (adminConfig.CustomCategories.length === 0) {
+    const defaultCategories = [
+      { name: '热门', type: 'movie' as const, query: '热门' },
+      { name: '豆瓣高分', type: 'movie' as const, query: '豆瓣高分' },
+      { name: '华语', type: 'movie' as const, query: '华语' },
+      { name: '欧美', type: 'movie' as const, query: '欧美' },
+      { name: '韩剧', type: 'tv' as const, query: '韩剧' },
+      { name: '美剧', type: 'tv' as const, query: '美剧' },
+      { name: '国产剧', type: 'tv' as const, query: '国产剧' },
+      { name: '动漫', type: 'tv' as const, query: '日本动画' },
+      { name: '综艺', type: 'tv' as const, query: '综艺' },
+    ];
+    defaultCategories.forEach((category) => {
+      adminConfig.CustomCategories.push({
+        name: category.name,
+        type: category.type,
+        query: category.query,
+        from: 'config',
+        disabled: false,
+      });
+    });
+  }
 
   // 从配置文件中补充直播源信息
   Object.entries(cfgFile.lives || []).forEach(([key, live]) => {

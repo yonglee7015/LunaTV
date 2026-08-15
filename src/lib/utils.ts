@@ -81,8 +81,8 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
       const pingStart = performance.now();
       let pingTime = 0;
 
-      // 测量ping时间（使用m3u8 URL）
-      fetch(m3u8Url, { method: 'HEAD', mode: 'no-cors' })
+      // 测量ping时间（使用m3u8 URL）- 移除 mode: 'no-cors' 以允许完整的头部
+      fetch(m3u8Url, { method: 'HEAD' })
         .then(() => {
           pingTime = performance.now() - pingStart;
         })
@@ -219,13 +219,15 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
 export function cleanHtmlTags(text: string): string {
   if (!text) return '';
 
-  const cleanedText = text
+  // 先使用 he 库解码 HTML 实体，再处理标签
+  const decodedText = he.decode(text);
+
+  const cleanedText = decodedText
     .replace(/<[^>]+>/g, '\n') // 将 HTML 标签替换为换行
     .replace(/\n+/g, '\n') // 将多个连续换行合并为一个
     .replace(/[ \t]+/g, ' ') // 将多个连续空格和制表符合并为一个空格，但保留换行符
     .replace(/^\n+|\n+$/g, '') // 去掉首尾换行
     .trim(); // 去掉首尾空格
 
-  // 使用 he 库解码 HTML 实体
-  return he.decode(cleanedText);
+  return cleanedText;
 }

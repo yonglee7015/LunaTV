@@ -10,25 +10,69 @@ import { SearchResult } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
-  console.log(request.url);
-  try {
-    console.log('Cron job triggered:', new Date().toISOString());
+/**
+ * CSRF protection: Verify cron secret if configured
+ */
+function verifyCronSecret(request: NextRequest): boolean {
+  const cronSecret = process.env.CRON_SECRET;
 
-    cronJob();
+  // If no secret is configured, allow the request (backward compatibility)
+  if (!cronSecret) {
+    console.warn('⚠️  CRON_SECRET not configured. Set CRON_SECRET env var for security.');
+    return true;
+  }
+
+  const providedSecret = request.headers.get('X-Cron-Secret');
+  if (!providedSecret) {
+    console.error('❌ Cron request missing X-Cron-Secret header');
+    return false;
+  }
+
+  // Use constant-time comparison to prevent timing attacks
+  const secretBuffer = Buffer.from(cronSecret);
+  const providedBuffer = Buffer.from(providedSecret);
+
+  if (secretBuffer.length !== providedBuffer.length) {
+    return false;
+  }
+
+  let mismatch = 0;
+  for (let i = 0; i < secretBuffer.length; i++) {
+    mismatch |= secretBuffer[i] ^ providedBuffer[i];
+  }
+
+  return mismatch === 0;
+}
+
+export async function GET(request: NextRequest) {
+  console.log(`Cron request from: ${request.headers.get('user-agent')}`);
+
+  // Verify CSRF token
+  if (!verifyCronSecret(request)) {
+    console.error('❌ Cron request denied: invalid or missing secret');
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
+
+  try {
+    console.log('✅ Cron job triggered:', new Date().toISOString());
+
+    // Run cron job in background (don't wait for completion)
+    cronJob().catch((err) => {
+      console.error('❌ Cron job error:', err);
+    });
 
     return NextResponse.json({
       success: true,
-      message: 'Cron job executed successfully',
+      message: 'Cron job started',
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Cron job failed:', error);
+    console.error('❌ Cron job failed to start:', error);
 
     return NextResponse.json(
       {
         success: false,
-        message: 'Cron job failed',
+        message: 'Failed to start cron job',
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString(),
       },
@@ -46,21 +90,29 @@ async function cronJob() {
 async function refreshAllLiveChannels() {
   const config = await getConfig();
 
-  // 并发刷新所有启用的直播源
+  // 并发刷新所有启用的直播源，使用 Promise.allSettled 确保一个失败不影响其他
   const refreshPromises = (config.LiveConfig || [])
     .filter(liveInfo => !liveInfo.disabled)
     .map(async (liveInfo) => {
       try {
         const nums = await refreshLiveChannels(liveInfo);
         liveInfo.channelNumber = nums;
+        return { status: 'fulfilled', value: liveInfo };
       } catch (error) {
-        console.error(`刷新直播源失败 [${liveInfo.name || liveInfo.key}]:`, error);
+        console.error(`❌ 刷新直播源失败 [${liveInfo.name || liveInfo.key}]:`, error);
         liveInfo.channelNumber = 0;
+        return { status: 'rejected', reason: error };
       }
     });
 
-  // 等待所有刷新任务完成
-  await Promise.all(refreshPromises);
+  // 等待所有刷新任务完成，即使某些失败
+  const results = await Promise.allSettled(refreshPromises);
+
+  // 统计成功和失败
+  const fulfilled = results.filter(r => r.status === 'fulfilled').length;
+  const rejected = results.filter(r => r.status === 'rejected').length;
+
+  console.log(`✅ 直播源刷新完成: ${fulfilled} 成功, ${rejected} 失败`);
 
   // 保存配置
   await db.saveAdminConfig(config);
@@ -85,7 +137,7 @@ async function refreshConfig() {
         const decodedBytes = bs58.decode(configContent);
         decodedContent = new TextDecoder().decode(decodedBytes);
       } catch (decodeError) {
-        console.warn('Base58 解码失败:', decodeError);
+        console.warn('⚠️  Base58 解码失败:', decodeError);
         throw decodeError;
       }
 
@@ -98,11 +150,12 @@ async function refreshConfig() {
       config.ConfigSubscribtion.LastCheck = new Date().toISOString();
       config = refineConfig(config);
       await db.saveAdminConfig(config);
+      console.log('✅ 配置刷新成功');
     } catch (e) {
-      console.error('刷新配置失败:', e);
+      console.error('❌ 刷新配置失败:', e);
     }
   } else {
-    console.log('跳过刷新：未配置订阅地址或自动更新');
+    console.log('ℹ️  跳过刷新：未配置订阅地址或自动更新');
   }
 }
 
@@ -135,7 +188,7 @@ async function refreshRecordAndFavorites() {
             return detail;
           })
           .catch((err) => {
-            console.error(`获取视频详情失败 (${source}+${id}):`, err);
+            console.error(`❌ 获取视频详情失败 (${source}+${id}):`, err);
             return null;
           });
         detailCache.set(key, promise);
@@ -162,7 +215,7 @@ async function refreshRecordAndFavorites() {
 
     // 处理单个用户的播放记录和收藏
     const processUser = async (user: string) => {
-      console.log(`开始处理用户: ${user}`);
+      console.log(`ℹ️  开始处理用户: ${user}`);
 
       // 播放记录
       try {
@@ -175,13 +228,13 @@ async function refreshRecordAndFavorites() {
           try {
             const [source, id] = key.split('+');
             if (!source || !id) {
-              console.warn(`跳过无效的播放记录键: ${key}`);
+              console.warn(`⚠️  跳过无效的播放记录键: ${key}`);
               return;
             }
 
             const detail = await getDetail(source, id, record.title);
             if (!detail) {
-              console.warn(`跳过无法获取详情的播放记录: ${key}`);
+              console.warn(`⚠️  跳过无法获取详情的播放记录: ${key}`);
               return;
             }
 
@@ -200,20 +253,20 @@ async function refreshRecordAndFavorites() {
                 search_title: record.search_title,
               });
               console.log(
-                `更新播放记录: ${record.title} (${record.total_episodes} -> ${episodeCount})`
+                `✅ 更新播放记录: ${record.title} (${record.total_episodes} -> ${episodeCount})`
               );
             }
 
             processedRecords++;
           } catch (err) {
-            console.error(`处理播放记录失败 (${key}):`, err);
+            console.error(`❌ 处理播放记录失败 (${key}):`, err);
           }
         });
 
         await runWithConcurrency(tasks, 5);
-        console.log(`播放记录处理完成: ${processedRecords}/${totalRecords}`);
+        console.log(`✅ 播放记录处理完成: ${processedRecords}/${totalRecords}`);
       } catch (err) {
-        console.error(`获取用户播放记录失败 (${user}):`, err);
+        console.error(`❌ 获取用户播放记录失败 (${user}):`, err);
       }
 
       // 收藏
@@ -230,13 +283,13 @@ async function refreshRecordAndFavorites() {
           try {
             const [source, id] = key.split('+');
             if (!source || !id) {
-              console.warn(`跳过无效的收藏键: ${key}`);
+              console.warn(`⚠️  跳过无效的收藏键: ${key}`);
               return;
             }
 
             const favDetail = await getDetail(source, id, fav.title);
             if (!favDetail) {
-              console.warn(`跳过无法获取详情的收藏: ${key}`);
+              console.warn(`⚠️  跳过无法获取详情的收藏: ${key}`);
               return;
             }
 
@@ -252,20 +305,20 @@ async function refreshRecordAndFavorites() {
                 search_title: fav.search_title,
               });
               console.log(
-                `更新收藏: ${fav.title} (${fav.total_episodes} -> ${favEpisodeCount})`
+                `✅ 更新收藏: ${fav.title} (${fav.total_episodes} -> ${favEpisodeCount})`
               );
             }
 
             processedFavorites++;
           } catch (err) {
-            console.error(`处理收藏失败 (${key}):`, err);
+            console.error(`❌ 处理收藏失败 (${key}):`, err);
           }
         });
 
         await runWithConcurrency(tasks, 5);
-        console.log(`收藏处理完成: ${processedFavorites}/${totalFavorites}`);
+        console.log(`✅ 收藏处理完成: ${processedFavorites}/${totalFavorites}`);
       } catch (err) {
-        console.error(`获取用户收藏失败 (${user}):`, err);
+        console.error(`❌ 获取用户收藏失败 (${user}):`, err);
       }
     };
 
@@ -273,8 +326,8 @@ async function refreshRecordAndFavorites() {
     const userTasks = users.map((user) => () => processUser(user));
     await runWithConcurrency(userTasks, 3);
 
-    console.log('刷新播放记录/收藏任务完成');
+    console.log('✅ 刷新播放记录/收藏任务完成');
   } catch (err) {
-    console.error('刷新播放记录/收藏任务启动失败', err);
+    console.error('❌ 刷新播放记录/收藏任务启动失败', err);
   }
 }
