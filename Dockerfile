@@ -36,8 +36,6 @@ RUN addgroup -g 1001 -S nodejs && adduser -u 1001 -S nextjs -G nodejs
 
 WORKDIR /app
 ENV NODE_ENV=production
-ENV HOSTNAME=0.0.0.0
-ENV PORT=3000
 ENV DOCKER_ENV=true
 
 # 从构建器中复制 standalone 输出
