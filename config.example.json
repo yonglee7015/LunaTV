@@ -1,0 +1,192 @@
+{
+  "cache_time": 7200,
+  "api_site": {
+    "feifan": {
+      "name": "非凡资源",
+      "api": "https://api.ffzyapi.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "baofeng": {
+      "name": "暴风资源",
+      "api": "https://bfzyapi.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "wujinzy": {
+      "name": "无尽资源",
+      "api": "https://api.wujinapi.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "hongniuzy": {
+      "name": "红牛资源",
+      "api": "https://www.hongniuzy2.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "guangsu": {
+      "name": "光速资源",
+      "api": "https://api.guangsuapi.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "huya": {
+      "name": "虎牙资源",
+      "api": "https://www.huyaapi.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "jisu": {
+      "name": "极速资源",
+      "api": "https://jszyapi.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "iqiyi": {
+      "name": "爱奇艺资源",
+      "api": "https://iqiyizyapi.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "maoyan": {
+      "name": "猫眼资源",
+      "api": "https://api.maoyanapi.top/api.php/provide/vod",
+      "detail": ""
+    },
+    "360zy": {
+      "name": "360资源",
+      "api": "https://360zyzz.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "modu": {
+      "name": "魔都资源",
+      "api": "https://www.mdzyapi.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "xinlang": {
+      "name": "新浪资源",
+      "api": "https://api.xinlangapi.com/xinlangapi.php/provide/vod",
+      "detail": ""
+    },
+    "subo": {
+      "name": "速播资源",
+      "api": "https://subocaiji.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "piaoling": {
+      "name": "飘零资源",
+      "api": "https://p2100.net/api.php/provide/vod",
+      "detail": ""
+    },
+    "modu-dm": {
+      "name": "魔都动漫",
+      "api": "https://caiji.moduapi.cc/api.php/provide/vod",
+      "detail": ""
+    },
+    "zuida": {
+      "name": "最大资源",
+      "api": "https://api.zuidapi.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "ruyi": {
+      "name": "如意资源",
+      "api": "https://cj.rycjapi.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "haohua": {
+      "name": "豪华资源",
+      "api": "https://hhzyapi.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "bdzy": {
+      "name": "百度云zy",
+      "api": "https://api.apibdzy.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "aidan": {
+      "name": "艾旦影视",
+      "api": "https://lovedan.net/api.php/provide/vod",
+      "detail": ""
+    },
+    "liangzi": {
+      "name": "量子影视",
+      "api": "https://cj.lziapi.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "jinying": {
+      "name": "金鹰点播",
+      "api": "https://jyzyapi.com/provide/vod/from/jinyingyun/at/json",
+      "detail": ""
+    },
+    "uku": {
+      "name": "U酷影视",
+      "api": "https://api.ukuapi88.com/api.php/provide/vod",
+      "detail": ""
+    },
+    "dytt": {
+      "name": "电影天堂",
+      "api": "http://caiji.dyttzyapi.com/api.php/provide/vod",
+      "detail": ""
+    }
+  },
+  "custom_category": [
+    {
+      "name": "热门",
+      "type": "movie",
+      "query": "热门"
+    },
+    {
+      "name": "豆瓣高分",
+      "type": "movie",
+      "query": "豆瓣高分"
+    },
+    {
+      "name": "华语",
+      "type": "movie",
+      "query": "华语"
+    },
+    {
+      "name": "欧美",
+      "type": "movie",
+      "query": "欧美"
+    },
+    {
+      "name": "韩剧",
+      "type": "tv",
+      "query": "韩剧"
+    },
+    {
+      "name": "美剧",
+      "type": "tv",
+      "query": "美剧"
+    },
+    {
+      "name": "国产剧",
+      "type": "tv",
+      "query": "国产剧"
+    },
+    {
+      "name": "动漫",
+      "type": "tv",
+      "query": "日本动画"
+    },
+    {
+      "name": "综艺",
+      "type": "tv",
+      "query": "综艺"
+    }
+  ],
+  "lives": {
+    "fanmingming": {
+      "name": "Fanmingming 直播源",
+      "url": "https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/index.m3u",
+      "ua": "",
+      "epg": ""
+    },
+    "fanmingming-ipv6": {
+      "name": "Fanmingming 直播源 (IPv6)",
+      "url": "https://raw.githubusercontent.com/fanmingming/live/main/tv/m3u/ipv6.m3u",
+      "ua": "",
+      "epg": ""
+    },
+    "iptv-org-cn": {
+      "name": "iptv-org 中文频道",
+      "url": "https://iptv-org.github.io/iptv/countries/cn.m3u",
+      "ua": "",
+      "epg": ""
+    }
+  }
+}
