@@ -12,6 +12,9 @@
 /.next/
 /out/
 
+# local runtime (redis build etc.)
+/.runtime/
+
 # production
 /build
 
