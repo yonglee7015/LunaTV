@@ -81,7 +81,7 @@
 # 使用 dev compose（本地构建镜像 + Redis，适合本仓库开发/自用）
 docker compose -f docker-compose.dev.yml up -d --build
 
-# 或使用默认 compose（从本仓库构建，Redis 持久化）
+# 或使用默认 compose（从本仓库构建，Redis 持久化，含健康检查）
 docker compose up -d --build
 
 # 查看日志
@@ -91,6 +91,26 @@ docker compose logs -f app
 访问 `http://localhost:3000`，默认站长账号密码见 compose 中 `USERNAME` / `PASSWORD`（首次登录后请立即修改）。
 
 > 若只想运行官方镜像（不包含本仓库改动），可直接 `docker pull ghcr.io/moontechlab/lunatv:latest` 后按下方模板运行。
+
+#### 🔄 开机自启（Linux systemd）
+
+一键安装 + 开机自动拉起（需要 sudo，可在任意 Linux 机器上执行）：
+
+```bash
+sudo bash scripts/install-service.sh
+```
+
+脚本会：检查 docker → 生成 `.env`（含随机站长密码，请保存）→ 本地构建镜像并 `docker compose up -d` → 安装 `lunatv.service` 使开机自动启动。
+
+常用管理命令：
+
+```bash
+docker compose ps              # 查看状态
+docker compose logs -f app     # 查看日志
+sudo systemctl stop lunatv     # 停止（并取消开机自启）
+sudo systemctl start lunatv    # 手动启动
+docker compose down            # 停止并删除容器（数据卷保留）
+```
 
 ### zeabur 一键部署
 

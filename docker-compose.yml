@@ -3,29 +3,41 @@ services:
     image: redis:alpine
     container_name: lunatv-redis
     restart: unless-stopped
-    ports:
-      - '6379:6379'
+    # Redis 仅供应用容器通过 lunatv-network 内部访问，无需暴露到宿主机
+    # ports:
+    #   - '6379:6379'
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - lunatv-network
 
   lunatv-app:
-    image: ghcr.io/moontechlab/lunatv:latest
+    # 优先使用本仓库源码构建镜像（包含内置默认源），避免拉取官方空壳镜像
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lunatv:latest
     container_name: lunatv-app
     restart: unless-stopped
     ports:
       - '3000:3000'
     environment:
-      - USERNAME=admin
-      - PASSWORD=admin_password
+      # 站长账号（部署前建议通过 .env 覆盖为强密码）
+      - USERNAME=${USERNAME:-admin}
+      - PASSWORD=${PASSWORD:-admin_password}
       - NEXT_PUBLIC_STORAGE_TYPE=redis
       - REDIS_URL=redis://lunatv-redis:6379
       - NEXT_PUBLIC_DOUBAN_PROXY_TYPE=direct
       - NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE=direct
     depends_on:
-      - lunatv-redis
+      lunatv-redis:
+        condition: service_healthy
     networks:
       - lunatv-network
 
