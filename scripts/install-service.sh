@@ -25,6 +25,8 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 # ---------- 2. .env ----------
+# 若以 sudo 运行，则把生成的文件归还给调用者，避免普通用户后续 docker compose 读不了 .env
+RUN_USER="${SUDO_USER:-$(id -un)}"
 if [ ! -f .env ]; then
   USERNAME="${LUNA_USERNAME:-admin}"
   PASSWORD="${LUNA_PASSWORD:-$(head -c 12 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 16)}"
@@ -33,8 +35,10 @@ USERNAME=${USERNAME}
 PASSWORD=${PASSWORD}
 EOF
   chmod 600 .env
+  chown "$RUN_USER" .env 2>/dev/null || true
   warn "已生成 .env：USERNAME=${USERNAME}  PASSWORD=${PASSWORD}（请妥善保存！）"
 else
+  chown "$RUN_USER" .env 2>/dev/null || true
   say "检测到已有 .env，沿用其中配置"
 fi
 
@@ -51,33 +55,21 @@ for i in $(seq 1 60); do
   [ "$i" = 60 ] && die "应用 120 秒内未就绪，请查看: docker compose logs -f app"
 done
 
-# ---------- 4. systemd 开机自启 ----------
+# ---------- 4. 开机自启（Docker 原生机制） ----------
+# 容器已配置 restart: unless-stopped，只需保证 docker 服务开机自启即可，
+# 开机后容器会按重启策略自动恢复，无需额外的 oneshot systemd 单元。
 if command -v systemctl >/dev/null 2>&1; then
-  UNIT=/etc/systemd/system/lunatv.service
-  say "安装开机自启服务 $UNIT"
-  cat > "$UNIT" <<EOF
-[Unit]
-Description=LunaTV (docker compose)
-Requires=docker.service
-After=docker.service network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-WorkingDirectory=$ROOT
-ExecStart=/usr/bin/env docker compose up -d
-ExecStop=/usr/bin/env docker compose down
-ExecReload=/usr/bin/env docker compose up -d
-StandardOutput=journal
-User=root
-
-[Install]
-WantedBy=multi-user.target
-EOF
-  systemctl daemon-reload
-  systemctl enable lunatv.service >/dev/null
-  say "已启用 lunatv.service（开机自动 docker compose up）"
+  # 清理旧的 oneshot 单元（若存在），避免时序冲突
+  if [ -f /etc/systemd/system/lunatv.service ]; then
+    systemctl disable lunatv.service 2>/dev/null || true
+    rm -f /etc/systemd/system/lunatv.service
+    systemctl daemon-reload
+    say "已移除旧的 lunatv.service（改为 Docker 原生自启）"
+  fi
+  systemctl enable docker >/dev/null 2>&1 || true
+  say "已确保 docker 服务开机自启（容器按 restart: unless-stopped 自动恢复）"
+else
+  warn "未检测到 systemctl，无法设置 docker 开机自启，请手动确保 docker 服务随系统启动"
 fi
 
 # ---------- 5. 汇总 ----------
