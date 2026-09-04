@@ -288,8 +288,13 @@ function DoubanPageClient() {
         }
       } else if (type === 'anime' && primarySelection === '每日放送') {
         const calendarData = await GetBangumiCalendarData();
+        // 兼容前端 3 位缩写(Mon)与接口完整名(Monday)两种格式
         const weekdayData = calendarData.find(
-          (item) => item.weekday.en === selectedWeekday
+          (item) =>
+            item.weekday.en === selectedWeekday ||
+            item.weekday.en.toLowerCase().startsWith(
+              selectedWeekday.toLowerCase().slice(0, 3)
+            )
         );
         if (weekdayData) {
           data = {
