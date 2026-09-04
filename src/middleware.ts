@@ -127,6 +127,8 @@ function shouldSkipAuth(pathname: string): boolean {
     '/screenshot.png',
     // 图片代理是公开资源（供 <img> 加载海报），无需登录
     '/api/image-proxy',
+    // 番剧日历是公开数据（供首页/番剧页展示），无需登录
+    '/api/bangumi/calendar',
   ];
 
   return skipPaths.some((path) => pathname.startsWith(path));
