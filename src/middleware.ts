@@ -129,6 +129,8 @@ function shouldSkipAuth(pathname: string): boolean {
     '/api/image-proxy',
     // 番剧日历是公开数据（供首页/番剧页展示），无需登录
     '/api/bangumi/calendar',
+    // 开放注册：登录前允许注册
+    '/api/register',
   ];
 
   return skipPaths.some((path) => pathname.startsWith(path));
