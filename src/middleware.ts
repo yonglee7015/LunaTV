@@ -125,6 +125,8 @@ function shouldSkipAuth(pathname: string): boolean {
     '/icons/',
     '/logo.png',
     '/screenshot.png',
+    // 图片代理是公开资源（供 <img> 加载海报），无需登录
+    '/api/image-proxy',
   ];
 
   return skipPaths.some((path) => pathname.startsWith(path));

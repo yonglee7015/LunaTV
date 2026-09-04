@@ -12,9 +12,15 @@ export async function GET(request: Request) {
   }
 
   try {
+    // 针对不同图床设置合适的 Referer，避免防盗链拦截
+    let referer = 'https://movie.douban.com/';
+    if (/bgm\.tv|bgm38\.tv/.test(imageUrl)) {
+      referer = 'https://bgm.tv/';
+    }
+
     const imageResponse = await fetch(imageUrl, {
       headers: {
-        Referer: 'https://movie.douban.com/',
+        Referer: referer,
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
       },
