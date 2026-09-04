@@ -56,28 +56,42 @@ export function getAuthInfoFromBrowserCookie(): {
       return null;
     }
 
-    // 单次解码，不支持双重编码
-    // 使用明确的编码版本标记来处理不同的编码方案
+    // 兼容不同编码方案（服务端可能对 cookie 进行 encodeURIComponent，浏览器 cookie 再编码一次导致双重编码）
     let decoded = authCookie;
 
     // 检查是否以 'v1:' 开头（版本控制）
     if (decoded.startsWith('v1:')) {
-      decoded = decodeURIComponent(decoded.substring(3));
+      decoded = decoded.substring(3);
     } else if (decoded.startsWith('v0:')) {
-      // 旧版本支持（只解码一次）
-      decoded = decodeURIComponent(decoded.substring(3));
-    } else {
-      // 无版本标记，尝试解码一次
+      decoded = decoded.substring(3);
+    }
+
+    // 反复解码直到能解析为合法 JSON（处理单/双重编码）
+    let parsed: { password?: string; username?: string; signature?: string; timestamp?: number; role?: 'owner' | 'admin' | 'user' } | null = null;
+    for (let i = 0; i < 3; i++) {
       try {
-        decoded = decodeURIComponent(decoded);
+        parsed = JSON.parse(decoded);
+        break;
       } catch {
-        // 如果解码失败，使用原始值
-        decoded = authCookie;
+        // 解码失败，尝试再 decode 一次
+        try {
+          decoded = decodeURIComponent(decoded);
+        } catch {
+          break;
+        }
       }
     }
 
-    const authData = JSON.parse(decoded);
-    return authData;
+    if (!parsed) {
+      // 最后的兜底：若仍未解析成功，尝试对原文直接 parse
+      try {
+        parsed = JSON.parse(authCookie);
+      } catch {
+        return null;
+      }
+    }
+
+    return parsed;
   } catch (error) {
     return null;
   }
