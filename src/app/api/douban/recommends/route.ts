@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getCacheTime } from '@/lib/config';
-import { fetchDoubanData } from '@/lib/douban';
+import { fetchDoubanData, getDoubanBaseHost } from '@/lib/douban';
 import { DoubanResult } from '@/lib/types';
 
 interface DoubanRecommendApiResponse {
@@ -78,7 +78,8 @@ export async function GET(request: NextRequest) {
     tags.push(platform);
   }
 
-  const baseUrl = `https://m.douban.com/rexxar/api/v2/${kind}/recommend`;
+  // 根据豆瓣数据代理类型选择可达的域名（避免服务端直连 m.douban.com 超时）
+  const baseUrl = `https://${getDoubanBaseHost()}/rexxar/api/v2/${kind}/recommend`;
   const params = new URLSearchParams();
   params.append('refresh', '0');
   params.append('start', pageStart.toString());

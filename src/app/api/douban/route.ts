@@ -57,7 +57,13 @@ export async function GET(request: Request) {
     return handleTop250(pageStart);
   }
 
-  const target = `https://movie.douban.com/j/search_subjects?type=${type}&tag=${tag}&sort=recommend&page_limit=${pageSize}&page_start=${pageStart}`;
+  const searchHost =
+    process.env.NEXT_PUBLIC_DOUBAN_PROXY_TYPE === 'cmliussss-cdn-tencent'
+      ? 'movie.douban.cmliussss.net'
+      : process.env.NEXT_PUBLIC_DOUBAN_PROXY_TYPE === 'cmliussss-cdn-ali'
+        ? 'movie.douban.cmliussss.com'
+        : 'movie.douban.com';
+  const target = `https://${searchHost}/j/search_subjects?type=${type}&tag=${tag}&sort=recommend&page_limit=${pageSize}&page_start=${pageStart}`;
 
   try {
     // 调用豆瓣 API
